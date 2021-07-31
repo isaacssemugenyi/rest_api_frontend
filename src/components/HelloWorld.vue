@@ -1,60 +1,109 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-router" target="_blank" rel="noopener">router</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-vuex" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
-  </div>
+  <v-container>
+    <v-row class="text-center">
+     <v-col>
+       <v-btn @click="getUserData">Load data</v-btn>
+       <p>{{ myName }}</p>
+       <ul v-for="user in userData" :key="user._id">
+         <li>{{user.firstName}}  
+           <v-btn @click="deleteAUser(user)">Delete</v-btn>
+           <v-btn @click="updateData(user)">update</v-btn>
+           </li>
+       </ul>
+     </v-col>
+     <v-col>
+
+      <v-text-field v-model="dataToPost.firstName"/><br/>
+      <v-text-field v-model="dataToPost.email"/><br/>
+      <v-text-field v-model="dataToPost.phone"/><br/>
+
+      <v-btn @click="postData">Post A User</v-btn>
+     </v-col>
+      <hr>
+      <v-col>
+       <v-text-field v-model="dataToUpdate.firstName"/><br/>
+      <v-text-field v-model="dataToUpdate.email"/><br/>
+      <v-text-field v-model="dataToUpdate.phone"/><br/>
+      <v-btn @click="sendUpdate">Update A User</v-btn>
+     </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script>
+import axios from 'axios'
 export default {
   name: 'HelloWorld',
-  props: {
-    msg: String
+  data: () => ({
+    myName: "isaac",
+    userData: [],
+    dataToPost: {
+      firstName: '',
+      email: '',
+      phone: ''
+    },
+    defaultPost: {
+       firstName: '',
+      email: '',
+      phone: ''
+    },
+    dataToUpdate: {
+      _id: "",
+        firstName: '',
+      email: '',
+      phone: ''
+    },
+    editedIndex: -1
+  }),
+  methods: {
+    async getUserData(){
+      try {
+        const response = await axios.get("http://localhost:3000/users");
+        this.userData = response.data;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async postData(){
+      try {
+        const response = await axios.post("http://localhost:3000/users", this.dataToPost);
+        this.userData.push(response.data);
+        this.dataToPost = Object.assign({}, this.defaultPost);
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async updateData(item){
+      // try {
+        this.editedIndex = this.userData.indexOf(item)
+        this.dataToUpdate = Object.assign({}, this.userData[ this.editedIndex])
+    },
+    async sendUpdate(){
+      try {
+
+       const response = await axios.put(`http://localhost:3000/users/${this.dataToUpdate._id}`, this.dataToUpdate);
+       if(response.status === 200 || response.status === 201){
+          this.userData.splice(this.editedIndex, 1, response.data);
+          this.dataToUpdate = Object.assign({}, this.defaultPost);
+          // splice(a, b, c)
+        }       
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async deleteAUser(item){
+      try {
+        this.editedIndex = this.userData.indexOf(item)
+        const idToDelete = this.userData[this.editedIndex]._id
+        const response = await axios.delete(`http://localhost:3000/users/${idToDelete}`)
+        if(response.status === 200 || response.status === 201){
+          this.userData.splice(this.editedIndex, 1);
+          // splice(a, b, c)
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
   }
 }
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="scss">
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
